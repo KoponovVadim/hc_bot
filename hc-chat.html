@@ -1,0 +1,19 @@
+<!-- Hangcha Chat Widget HTML (Joomla-ready)
+Вставьте этот блок в шаблон Joomla (index.php или module)
+-->
+<button class="chat-open-btn" id="chatOpenBtn" aria-label="Открыть чат">
+  <svg viewBox="0 0 24 24"><path d="M6.62 10.79a15.053 15.053 0 006.59 6.59l2.2-2.2a1 1 0 011.01-.24c1.12.37 2.33.57 3.58.57a1 1 0 011 1V20a1 1 0 01-1 1C10.07 21 3 13.93 3 5a1 1 0 011-1h3.5a1 1 0 011 1c0 1.25.2 2.46.57 3.58a1 1 0 01-.24 1.01l-2.2 2.2z"/></svg>
+</button>
+<div class="chat-widget closed" id="chatWidget" role="dialog" aria-modal="true" aria-label="Чат Hangcha">
+  <button class="chat-close-btn" id="chatCloseBtn" aria-label="Закрыть чат" type="button">×</button>
+  <div class="chat-header">
+    <div class="chat-title">Подбор погрузчика Hangcha</div>
+    <div class="chat-subtitle">Официальный дистрибьютор</div>
+  </div>
+  <div class="chat-messages" id="chatMessages" tabindex="0" aria-live="polite"></div>
+  <form class="chat-input-area" id="chatInputArea" autocomplete="off" style="display:none;">
+    <input type="text" class="chat-input" id="chatInput" placeholder="Введите значение..." autocomplete="off" />
+    <button type="submit" class="chat-send-btn" id="chatSendBtn" disabled>Отправить</button>
+  </form>
+</div>
+<!-- Подключите hc-chat.css и hc-chat.js в шаблоне -->
