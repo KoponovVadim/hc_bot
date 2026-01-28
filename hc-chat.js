@@ -11,6 +11,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let currentStep = 'welcome';
   const answers = {};
   let isTyping = false;
+  let finalRendered = false;
 
   /* ======================
      ELEMENTS
@@ -27,7 +28,6 @@ document.addEventListener('DOMContentLoaded', () => {
      SCENARIOS
      ====================== */
   const steps = {
-
     welcome: {
       text: 'Привет! Я помогу подобрать технику Hangcha. С чего начнём?',
       options: [
@@ -128,6 +128,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function start() {
     chatMessages.innerHTML = '';
     Object.keys(answers).forEach(k => delete answers[k]);
+    finalRendered = false;
     currentStep = 'welcome';
     renderStep();
   }
@@ -152,13 +153,15 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    if (currentStep === 'final') {
+    if (currentStep === 'final' && !finalRendered) {
+      finalRendered = true;
+      hideInput();
       renderFinalForm();
     }
   }
 
   /* ======================
-     BOT MESSAGE
+     BOT / USER MESSAGE
      ====================== */
   function botMessage(text) {
     isTyping = true;
@@ -202,6 +205,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     options.forEach(([value, label]) => {
       const btn = document.createElement('button');
+      btn.type = 'button';
       btn.className = 'option-btn';
       btn.textContent = label;
       btn.onclick = () => {
@@ -223,7 +227,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   /* ======================
-     INPUT
+     INPUT (БЕЗ SUBMIT)
      ====================== */
   function showInput(step) {
     chatForm.style.display = 'flex';
@@ -235,8 +239,7 @@ document.addEventListener('DOMContentLoaded', () => {
       chatSendBtn.disabled = chatInput.value.trim() === '';
     };
 
-    chatForm.onsubmit = e => {
-      e.preventDefault();
+    chatSendBtn.onclick = () => {
       const val = chatInput.value.trim();
       if (!val) return;
 
@@ -244,7 +247,6 @@ document.addEventListener('DOMContentLoaded', () => {
       answers[step.saveAs] = val;
       chatInput.value = '';
       hideInput();
-
       currentStep = step.next;
       renderStep();
     };
@@ -252,66 +254,76 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function hideInput() {
     chatForm.style.display = 'none';
+    chatSendBtn.onclick = null;
   }
 
   /* ======================
      FINAL FORM
      ====================== */
   function renderFinalForm() {
+    const wrap = document.createElement('div');
+
     const list = document.createElement('ul');
     list.className = 'summary-list';
 
     Object.entries(answers).forEach(([k, v]) => {
       const li = document.createElement('li');
-      li.innerHTML = `<span class="summary-label">${k}:</span>${v}`;
+      li.innerHTML = `<span class="summary-label">${k}:</span> ${v}`;
       list.appendChild(li);
     });
 
-    chatMessages.appendChild(list);
+    wrap.appendChild(list);
 
     const form = document.createElement('form');
+    form.className = 'final-form';
 
     form.innerHTML = `
       <textarea id="finalComment" rows="3" placeholder="Комментарий (необязательно)"></textarea>
-
       <div class="privacy-row">
         <input type="checkbox" id="privacyCheck">
         <label for="privacyCheck">
           Я согласен с <a href="/privacy" target="_blank">политикой конфиденциальности</a>
         </label>
       </div>
-
-      <button class="submit-btn" disabled>Отправить заявку</button>
+      <button type="submit" class="submit-btn" disabled>Отправить заявку</button>
     `;
 
     const checkbox = form.querySelector('#privacyCheck');
-    const button   = form.querySelector('.submit-btn');
+    const submitBtn = form.querySelector('.submit-btn');
 
     checkbox.onchange = () => {
-      button.disabled = !checkbox.checked;
+      submitBtn.disabled = !checkbox.checked;
     };
 
     form.onsubmit = async e => {
       e.preventDefault();
       if (!checkbox.checked) return;
 
-      const payload = {
-        ...answers,
-        comment: form.querySelector('#finalComment').value.trim(),
-        url: location.href,
-        sessionId: Date.now().toString()
-      };
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Отправка…';
 
-      await fetch(ENDPOINT, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
+      try {
+        await fetch(ENDPOINT, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            ...answers,
+            comment: form.querySelector('#finalComment').value.trim(),
+            requestUrl: location.href,
+            sessionId: Date.now().toString()
+          })
+        });
 
-      botMessage('Спасибо! Заявка отправлена. Мы свяжемся с вами в ближайшее время.');
+        await botMessage('Спасибо! Заявка отправлена. Мы свяжемся с вами в ближайшее время.');
+      } catch {
+        alert('Ошибка отправки. Попробуйте позже.');
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Отправить заявку';
+      }
     };
 
-    chatMessages.appendChild(form);
+    wrap.appendChild(form);
+    chatMessages.appendChild(wrap);
     scroll();
   }
 
