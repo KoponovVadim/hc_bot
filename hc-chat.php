@@ -21,7 +21,7 @@ if (!$data || !is_array($data)) {
 /* ======================
    CONFIG
    ====================== */
-$TO_EMAIL = 'sales@hc-russia.ru'; // ← НУЖНЫЙ EMAIL
+$TO_EMAIL = 'ar@deluxmedia.ru'; // ← НУЖНЫЙ EMAIL
 $SUBJECT  = 'Заявка с hc-russia.ru';
 
 /* ======================
@@ -50,7 +50,7 @@ $message = implode("\n", $lines);
 $headers = [
   'MIME-Version: 1.0',
   'Content-Type: text/plain; charset=UTF-8',
-  'From: hc-russia.ru <no-reply@hc-russia.ru>'
+  'From: ar@deluxmedia.ru <ar@deluxmedia.ru>'
 ];
 
 $sent = mail(
@@ -65,5 +65,4 @@ if (!$sent) {
   echo json_encode(['error' => 'Mail failed']);
   exit;
 }
-
 echo json_encode(['success' => true]);
