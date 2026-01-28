@@ -9,9 +9,9 @@ document.addEventListener('DOMContentLoaded', () => {
      STATE
      ====================== */
   let currentStep = 'welcome';
-  const answers = {};
   let isTyping = false;
   let finalRendered = false;
+  const answers = {};
 
   /* ======================
      ELEMENTS
@@ -128,8 +128,9 @@ document.addEventListener('DOMContentLoaded', () => {
   function start() {
     chatMessages.innerHTML = '';
     Object.keys(answers).forEach(k => delete answers[k]);
-    finalRendered = false;
     currentStep = 'welcome';
+    finalRendered = false;
+    hideInput();
     renderStep();
   }
 
@@ -143,8 +144,8 @@ document.addEventListener('DOMContentLoaded', () => {
     await botMessage(step.text);
 
     if (step.options) {
-      renderOptions(step.options, step);
       hideInput();
+      renderOptions(step.options, step);
       return;
     }
 
@@ -208,6 +209,7 @@ document.addEventListener('DOMContentLoaded', () => {
       btn.type = 'button';
       btn.className = 'option-btn';
       btn.textContent = label;
+
       btn.onclick = () => {
         userMessage(label);
         if (step.saveAs) answers[step.saveAs] = label;
@@ -215,10 +217,12 @@ document.addEventListener('DOMContentLoaded', () => {
         currentStep = step.next || value;
         renderStep();
       };
+
       box.appendChild(btn);
     });
 
     chatMessages.appendChild(box);
+    scroll();
   }
 
   function removeOptions() {
@@ -227,7 +231,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   /* ======================
-     INPUT (БЕЗ SUBMIT)
+     INPUT (БЕЗ FORM)
      ====================== */
   function showInput(step) {
     chatForm.style.display = 'flex';
@@ -245,8 +249,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
       userMessage(val);
       answers[step.saveAs] = val;
+
       chatInput.value = '';
       hideInput();
+
       currentStep = step.next;
       renderStep();
     };
@@ -255,6 +261,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function hideInput() {
     chatForm.style.display = 'none';
     chatSendBtn.onclick = null;
+    chatInput.oninput = null;
   }
 
   /* ======================
@@ -290,6 +297,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const checkbox = form.querySelector('#privacyCheck');
     const submitBtn = form.querySelector('.submit-btn');
+    const commentEl = form.querySelector('#finalComment');
 
     checkbox.onchange = () => {
       submitBtn.disabled = !checkbox.checked;
@@ -303,19 +311,21 @@ document.addEventListener('DOMContentLoaded', () => {
       submitBtn.textContent = 'Отправка…';
 
       try {
-        await fetch(ENDPOINT, {
+        const res = await fetch(ENDPOINT, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             ...answers,
-            comment: form.querySelector('#finalComment').value.trim(),
+            comment: commentEl.value.trim(),
             requestUrl: location.href,
             sessionId: Date.now().toString()
           })
         });
 
+        if (!res.ok) throw new Error('Server error');
+
         await botMessage('Спасибо! Заявка отправлена. Мы свяжемся с вами в ближайшее время.');
-      } catch {
+      } catch (err) {
         alert('Ошибка отправки. Попробуйте позже.');
         submitBtn.disabled = false;
         submitBtn.textContent = 'Отправить заявку';

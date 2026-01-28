@@ -1,122 +1,69 @@
 <?php
-/**
- * hc-chat.php
- * Обработчик заявок из чат-воронки Hangcha
- * Joomla 3
- * Файл расположен в:
- * /templates/trendshop/hc_bot/hc-chat.php
- */
+// hc-chat.php — обработчик заявок Hangcha (Joomla-safe)
 
-// ---------------------------------------------------------------------
-// ИНИЦИАЛИЗАЦИЯ JOOMLA
-// ---------------------------------------------------------------------
-
-define('_JEXEC', 1);
-
-// Корень Joomla: /home/amkodor/hc-russia.ru/docs/
-define('JPATH_BASE', dirname(__FILE__) . '/../../../');
-
-require_once JPATH_BASE . 'includes/defines.php';
-require_once JPATH_BASE . 'includes/framework.php';
-
-$app = JFactory::getApplication('site');
-$app->initialise();
-
-// ---------------------------------------------------------------------
-// ПРОВЕРКА МЕТОДА
-// ---------------------------------------------------------------------
+header('Content-Type: application/json; charset=utf-8');
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    http_response_code(405);
-    echo json_encode(['error' => 'Method not allowed']);
-    exit;
+  http_response_code(405);
+  echo json_encode(['error' => 'Method not allowed']);
+  exit;
 }
 
-// ---------------------------------------------------------------------
-// ПОЛУЧЕНИЕ JSON
-// ---------------------------------------------------------------------
-
-$raw  = file_get_contents('php://input');
+$raw = file_get_contents('php://input');
 $data = json_decode($raw, true);
 
 if (!$data || !is_array($data)) {
-    http_response_code(400);
-    echo json_encode(['error' => 'Invalid JSON']);
-    exit;
+  http_response_code(400);
+  echo json_encode(['error' => 'Invalid JSON']);
+  exit;
 }
 
-// ---------------------------------------------------------------------
-// ПОИСК КОНТАКТА
-// ---------------------------------------------------------------------
+/* ======================
+   CONFIG
+   ====================== */
+$TO_EMAIL = 'sales@hc-russia.ru'; // ← НУЖНЫЙ EMAIL
+$SUBJECT  = 'Заявка с hc-russia.ru';
 
-$contact = '';
-foreach ($data as $key => $value) {
-    if (
-        mb_stripos($key, 'контакт') !== false ||
-        mb_stripos($key, 'телефон') !== false ||
-        mb_stripos($key, 'email') !== false
-    ) {
-        $contact = trim($value);
-        break;
-    }
-}
-
-if ($contact === '') {
-    http_response_code(422);
-    echo json_encode(['error' => 'Contact is required']);
-    exit;
-}
-
-// ---------------------------------------------------------------------
-// ФОРМИРОВАНИЕ ПИСЬМА
-// ---------------------------------------------------------------------
-
-$lines   = [];
-$lines[] = 'Новая заявка с чат-воронки Hangcha';
-$lines[] = 'Сайт: hc-russia.ru';
-$lines[] = 'Дата: ' . date('d.m.Y H:i');
-$lines[] = '-----------------------------------';
+/* ======================
+   BUILD MESSAGE
+   ====================== */
+$lines = [];
 
 foreach ($data as $key => $value) {
-    if (is_array($value)) continue;
-    $lines[] = $key . ': ' . trim($value);
+  if ($value === '') continue;
+  $label = htmlspecialchars($key, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+  $val   = htmlspecialchars($value, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+  $lines[] = "$label: $val";
 }
 
-$body = implode("\n", $lines);
-
-// ---------------------------------------------------------------------
-// ОТПРАВКА EMAIL
-// ---------------------------------------------------------------------
-
-$mailer = JFactory::getMailer();
-
-// ВАЖНО: почта должна существовать на домене
-$mailer->setSender([
-    'no-reply@hc-russia.ru',   // <-- ОБЯЗАТЕЛЬНО существующий ящик или алиас
-    'Hangcha HC Russia'
-]);
-
-// КУДА ПРИХОДЯТ ВСЕ ЗАЯВКИ
-$mailer->addRecipient('sales@hc-russia.ru'); // <-- ОСНОВНАЯ ПОЧТА
-
-// Если пользователь оставил email — можно ответить
-if (filter_var($contact, FILTER_VALIDATE_EMAIL)) {
-    $mailer->addReplyTo($contact);
+if (!$lines) {
+  http_response_code(400);
+  echo json_encode(['error' => 'Empty payload']);
+  exit;
 }
 
-$mailer->setSubject('Новая заявка с чат-воронки Hangcha');
-$mailer->setBody($body);
+$message = implode("\n", $lines);
 
-$send = $mailer->Send();
+/* ======================
+   SEND EMAIL
+   ====================== */
+$headers = [
+  'MIME-Version: 1.0',
+  'Content-Type: text/plain; charset=UTF-8',
+  'From: hc-russia.ru <no-reply@hc-russia.ru>'
+];
 
-if ($send !== true) {
-    http_response_code(500);
-    echo json_encode(['error' => 'Mail send failed']);
-    exit;
+$sent = mail(
+  $TO_EMAIL,
+  $SUBJECT,
+  $message,
+  implode("\r\n", $headers)
+);
+
+if (!$sent) {
+  http_response_code(500);
+  echo json_encode(['error' => 'Mail failed']);
+  exit;
 }
-
-// ---------------------------------------------------------------------
-// OK
-// ---------------------------------------------------------------------
 
 echo json_encode(['success' => true]);

@@ -314,3 +314,26 @@
     height: 92vh;
   }
 }
+.final-form {
+  margin-top: 12px;
+}
+
+.final-form textarea {
+  width: 100%;
+  min-height: 80px;
+  resize: vertical;
+  padding: 10px 12px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 15px;
+  box-sizing: border-box;
+}
+
+.final-form textarea:focus {
+  outline: none;
+  border-color: var(--blue);
+}
+
+.final-form .submit-btn {
+  margin-top: 12px;
+}
