@@ -310,22 +310,24 @@ document.addEventListener('DOMContentLoaded', () => {
       submitBtn.disabled = true;
       submitBtn.textContent = 'Отправка…';
 
+      // Данные для отправки: только answers + comment
+      const dataToSend = { ...answers, comment: commentEl.value.trim() };
+      console.log('Отправляемые данные:', dataToSend);
+
       try {
         const res = await fetch(ENDPOINT, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            ...answers,
-            comment: commentEl.value.trim(),
-            requestUrl: location.href,
-            sessionId: Date.now().toString()
-          })
+          body: JSON.stringify(dataToSend)
         });
+
+        console.log('Ответ сервера:', res.status, res.statusText);
 
         if (!res.ok) throw new Error('Server error');
 
         await botMessage('Спасибо! Заявка отправлена. Мы свяжемся с вами в ближайшее время.');
       } catch (err) {
+        console.error('Ошибка отправки:', err);
         alert('Ошибка отправки. Попробуйте позже.');
         submitBtn.disabled = false;
         submitBtn.textContent = 'Отправить заявку';
