@@ -257,14 +257,23 @@
   padding: 0;
   margin: 6px 0 14px;
   font-size: 14.5px;
+  background: var(--panel);
+  border-radius: var(--radius);
+  padding: 12px;
+  border: 1px solid var(--border);
 }
 .summary-list li {
   padding-left: 10px;
   margin-bottom: 8px;
   border-left: 3px solid var(--blue);
+  line-height: 1.4;
+}
+.summary-list li:last-child {
+  margin-bottom: 0;
 }
 .summary-label {
   color: var(--text-secondary);
+  font-weight: 500;
   margin-right: 6px;
 }
 
@@ -280,6 +289,17 @@
 .privacy-row input {
   margin-top: 2px;
   accent-color: var(--blue);
+}
+.privacy-row label {
+  line-height: 1.4;
+  cursor: pointer;
+}
+.privacy-row a {
+  color: var(--blue);
+  text-decoration: underline;
+}
+.privacy-row a:hover {
+  color: var(--blue-hover);
 }
 
 /* Submit */
@@ -316,6 +336,9 @@
 }
 .final-form {
   margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 .final-form textarea {
@@ -327,13 +350,41 @@
   border-radius: var(--radius);
   font-size: 15px;
   box-sizing: border-box;
+  font-family: inherit;
+  color: var(--text-main);
+  background: var(--bg);
 }
 
 .final-form textarea:focus {
   outline: none;
   border-color: var(--blue);
+  box-shadow: 0 0 0 3px rgba(11, 60, 109, 0.1);
+}
+
+.final-form textarea::placeholder {
+  color: var(--text-secondary);
 }
 
 .final-form .submit-btn {
-  margin-top: 12px;
+  width: 100%;
+  padding: 12px 16px;
+  background: linear-gradient(135deg, var(--blue), #0e4b87);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius);
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background .2s, transform .1s;
+}
+
+.final-form .submit-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, var(--blue-hover), #1863aa);
+  transform: translateY(-1px);
+}
+
+.final-form .submit-btn:disabled {
+  background: var(--text-secondary);
+  cursor: not-allowed;
+  transform: none;
 }
