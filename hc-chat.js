@@ -1,341 +1,404 @@
 document.addEventListener('DOMContentLoaded', () => {
-
   const ENDPOINT = '/templates/trendshop/hc_bot/hc-chat.php';
 
-  let currentStep = 'welcome';
-  let isTyping = false;
-  let finalRendered = false;
+  const el = {
+    widget: document.getElementById('chatWidget'),
+    open: document.getElementById('chatOpenBtn'),
+    close: document.getElementById('chatCloseBtn'),
+    messages: document.getElementById('chatMessages'),
+    inputArea: document.getElementById('chatInputArea'),
+    input: document.getElementById('chatInput'),
+    send: document.getElementById('chatSendBtn'),
+    back: document.getElementById('backBtn'),
+    restart: document.getElementById('restartBtn'),
+  };
+
+  let currentStep = 'start';
+  let nextAfterIntro = null;
+  let introCompleted = false;
+  const history = [];
   const answers = {};
-  const historyStack = [];
+  let isSubmitting = false;
 
-  const chatWidget   = document.getElementById('chatWidget');
-  const chatOpenBtn  = document.getElementById('chatOpenBtn');
-  const chatCloseBtn = document.getElementById('chatCloseBtn');
-  const chatMessages = document.getElementById('chatMessages');
-  const chatForm     = document.getElementById('chatInputArea');
-  const chatInput    = document.getElementById('chatInput');
-  const chatSendBtn  = document.getElementById('chatSendBtn');
-
-  const backBtn = document.createElement('button');
-  backBtn.type = 'button';
-  backBtn.className = 'back-btn';
-  backBtn.textContent = 'Назад';
-  backBtn.style.display = 'none';
-  chatForm.insertBefore(backBtn, chatInput);
-
-  const restartBtn = document.createElement('button');
-  restartBtn.type = 'button';
-  restartBtn.className = 'restart-btn';
-  restartBtn.textContent = 'Начать заново';
-  chatWidget.appendChild(restartBtn);
-
+  /* =====================
+     SCENARIO
+  ===================== */
   const steps = {
-    welcome: {
-      text: 'Привет! Я помогу подобрать технику Hangcha. С чего начнём?',
+    start: {
+      text: 'Здравствуйте. Я помогу подобрать технику Hangcha, проверить наличие или проконсультировать по сервису.',
       options: [
-        ['pick', 'Подобрать погрузчик'],
-        ['warehouse', 'Складская техника'],
-        ['service', 'Сервис / запчасти'],
-        ['question', 'Задать вопрос']
+        ['pick_env', 'Подобрать погрузчик'],
+        ['stock_model', 'Проверить наличие'],
+        ['warehouse_type', 'Складская техника'],
+        ['service_type', 'Сервис, запчасти, АКБ'],
+        ['manager_question', 'Задать вопрос менеджеру']
       ]
     },
 
-    pick: {
-      text: 'Какой тип двигателя нужен?',
+    name: {
+      text: 'Как к вам обращаться?',
+      save: 'Имя',
+      input: true,
+      next: 'company'
+    },
+
+    company: {
+      text: 'Укажите компанию (если есть). Можно пропустить.',
+      save: 'Компания',
+      input: true,
+      optional: true,
+      next: null
+    },
+
+    pick_env: {
+      text: 'Где в основном будет работать погрузчик?',
+      save: 'Условия работы',
+      options: [
+        ['indoor', 'В помещении'],
+        ['outdoor', 'На улице'],
+        ['both', 'И там и там'],
+        ['unknown', 'Пока не знаю']
+      ],
+      next: 'pick_engine'
+    },
+    pick_engine: {
+      text: 'Какой тип погрузчика рассматриваете?',
+      save: 'Тип погрузчика',
       options: [
         ['electric', 'Электрический'],
         ['diesel', 'Дизельный'],
-        ['gas', 'Бензиновый']
+        ['benz', 'Бензиновый'],
+        ['unknown', 'Пока не знаю']
       ],
-      saveAs: 'Тип двигателя',
       next: 'pick_weight'
     },
-
     pick_weight: {
-      text: 'Максимальная грузоподъёмность?',
+      text: 'Какой максимальный вес груза нужно поднимать?',
+      save: 'Макс. вес груза',
       options: [
-        ['1.5', 'До 1,5 т'],
-        ['3', 'До 3 т'],
-        ['5', 'До 5 т'],
+        ['1.5', '1,5 т'],
+        ['2', '1,8–2 т'],
+        ['3', '2,5–3 т'],
+        ['5', '3,5–5 т'],
         ['7+', '7 т и более']
       ],
-      saveAs: 'Грузоподъёмность',
-      next: 'city'
+      next: 'pick_height'
     },
 
-    warehouse: {
-      text: 'Какая складская техника интересует?',
+    pick_height: {
+      text: 'На какую высоту нужно поднимать груз?',
+      save: 'Высота подъёма',
       options: [
-        ['reach', 'Ричтрак'],
-        ['stacker', 'Штабелёр'],
-        ['pallet', 'Тележка']
+        ['3', 'До 3 м'],
+        ['4.5', '4–4,5 м'],
+        ['6', '5–6 м'],
+        ['7+', '7 м и выше'],
+        ['unknown', 'Не знаю']
       ],
-      saveAs: 'Тип техники',
-      next: 'city'
+      next: 'pick_shift'
     },
 
-    service: {
-      text: 'Опишите ваш запрос',
-      input: true,
-      saveAs: 'Запрос',
-      next: 'city'
-    },
-
-    question: {
-      text: 'Введите ваш вопрос',
-      input: true,
-      saveAs: 'Вопрос',
+    pick_shift: {
+      text: 'Как планируется использовать технику?',
+      save: 'Интенсивность',
+      options: [
+        ['1', '1 смена'],
+        ['2', '2 смены'],
+        ['24', 'Круглосуточно'],
+        ['unknown', 'Пока не знаю']
+      ],
       next: 'city'
     },
 
     city: {
-      text: 'В какой город нужна поставка?',
+      text: 'В какой город или регион нужна поставка?',
+      save: 'Город',
       input: true,
-      saveAs: 'Город',
-      next: 'contact'
+      next: 'contact_method'
     },
 
-    contact: {
+    contact_method: {
+      text: 'Как удобнее получить коммерческое предложение?',
+      save: 'Канал связи',
+      options: [
+        ['phone', 'Телефон'],
+        ['telegram', 'Telegram'],
+        ['email', 'Email']
+      ],
+      next: 'contact_value'
+    },
+
+    contact_value: {
       text: 'Оставьте контакт для связи',
+      save: 'Контакт',
       input: true,
-      saveAs: 'Контакт',
       next: 'final'
     },
 
-    final: {
-      text: 'Проверьте данные и отправьте заявку'
-    }
+    stock_model: {
+      text: 'Какая модель техники интересует?',
+      save: 'Модель',
+      input: true,
+      next: 'city'
+    },
+
+    warehouse_type: {
+      text: 'Какой тип складской техники требуется?',
+      save: 'Тип складской техники',
+      options: [
+        ['pallet', 'Рохли'],
+        ['stacker', 'Штабелёры'],
+        ['reach', 'Ричтраки'],
+        ['picker', 'Комплектовщики'],
+        ['custom', 'Подбор под склад']
+      ],
+      next: 'warehouse_height'
+    },
+
+    warehouse_height: {
+      text: 'Какая требуется высота подъёма?',
+      save: 'Высота подъёма',
+      input: true,
+      next: 'warehouse_weight'
+    },
+
+    warehouse_weight: {
+      text: 'Какая грузоподъёмность нужна?',
+      save: 'Грузоподъёмность',
+      input: true,
+      next: 'city'
+    },
+
+    service_type: {
+      text: 'Чем можем помочь?',
+      save: 'Тип обращения',
+      options: [
+        ['battery', 'Аккумуляторы и зарядки'],
+        ['parts', 'Запчасти'],
+        ['tires', 'Шины']
+      ],
+      next: 'service_request'
+    },
+
+    service_request: {
+      text: 'Опишите ваш запрос',
+      save: 'Запрос',
+      input: true,
+      next: 'city'
+    },
+
+    manager_question: {
+      text: 'Введите вопрос для менеджера',
+      save: 'Вопрос',
+      input: true,
+      next: 'contact_method'
+    },
+
+    final: { submit: true }
   };
 
-  chatOpenBtn.onclick = () => {
-    chatWidget.classList.remove('closed');
-    chatOpenBtn.style.display = 'none';
-    if (!chatMessages.children.length) start();
-  };
+  /* =====================
+     HELPERS
+  ===================== */
+  const scroll = () => el.messages.scrollTop = el.messages.scrollHeight;
+function botTyped(text, callback) {
+  const row = document.createElement('div');
+  row.className = 'msg-row msg-bot';
 
-  chatCloseBtn.onclick = closeChat;
-  document.addEventListener('keydown', e => e.key === 'Escape' && closeChat());
+  const bubble = document.createElement('div');
+  bubble.className = 'msg-bubble';
+  row.appendChild(bubble);
 
-  restartBtn.onclick = start;
+  el.messages.appendChild(row);
+  scroll();
 
-  function closeChat() {
-    chatWidget.classList.add('closed');
-    chatOpenBtn.style.display = '';
-  }
+  const speed = 20; 
+  let i = 0;
+  const plainText = text.replace(/<br>/g, '\n');
 
-  function start() {
-    chatMessages.innerHTML = '';
-    Object.keys(answers).forEach(k => delete answers[k]);
-    historyStack.length = 0;
-    currentStep = 'welcome';
-    finalRendered = false;
-    hideInput();
-    renderStep();
-  }
-
-  async function renderStep() {
-    const step = steps[currentStep];
-    if (!step || isTyping) return;
-
-    await botMessage(step.text);
-
-    if (step.options) {
-      hideInput();
-      renderOptions(step.options, step);
-      return;
-    }
-
-    if (step.input) {
-      showInput(step);
-      return;
-    }
-
-    if (currentStep === 'final' && !finalRendered) {
-      finalRendered = true;
-      hideInput();
-      renderFinalForm();
+  function type() {
+    if (i < plainText.length) {
+      bubble.innerHTML += plainText[i] === '\n' ? '<br>' : plainText[i];
+      i++;
+      scroll();
+      setTimeout(type, speed);
+    } else if (callback) {
+      callback();
     }
   }
 
-  function botMessage(text) {
-    isTyping = true;
-    return new Promise(resolve => {
-      const row = document.createElement('div');
-      row.className = 'msg-row msg-bot';
-      const bubble = document.createElement('div');
-      bubble.className = 'msg-bubble';
-      row.appendChild(bubble);
-      chatMessages.appendChild(row);
+  type();
+}
 
-      let i = 0;
-      (function type() {
-        bubble.textContent = text.slice(0, i++);
-        scroll();
-        if (i <= text.length) {
-          setTimeout(type, 12);
-        } else {
-          isTyping = false;
-          resolve();
-        }
-      })();
-    });
-  }
+  const bot = (text, callback) => {
+  botTyped(text.replace(/\n/g, '<br>'), callback);
+};
 
-  function userMessage(text) {
+  const user = text => {
     const row = document.createElement('div');
     row.className = 'msg-row msg-user';
     row.innerHTML = `<div class="msg-bubble">${text}</div>`;
-    chatMessages.appendChild(row);
+    el.messages.appendChild(row);
     scroll();
+  };
+
+  /* =====================
+     RENDER
+  ===================== */
+  function render() {
+    const step = steps[currentStep];
+    if (!step) return;
+
+    el.back.style.display = history.length ? 'block' : 'none';
+
+    if (step.text) {
+  bot(step.text, () => {
+    if (step.options) renderOptions(step);
+    else if (step.input) renderInput(step);
+    else if (step.submit) submitOnce();
+  });
+} else {
+  if (step.options) renderOptions(step);
+  else if (step.input) renderInput(step);
+  else if (step.submit) submitOnce();
+}
   }
 
-  function renderOptions(options, step) {
+  function renderOptions(step) {
+    hideInput();
     removeOptions();
+
     const box = document.createElement('div');
     box.className = 'chat-options';
 
-    options.forEach(([value, label]) => {
+    step.options.forEach(([value, label]) => {
       const btn = document.createElement('button');
       btn.type = 'button';
       btn.className = 'option-btn';
       btn.textContent = label;
 
       btn.onclick = () => {
-        userMessage(label);
-        if (step.saveAs) answers[step.saveAs] = label;
-        removeOptions();
-        historyStack.push(currentStep);
-        currentStep = step.next || value;
-        renderStep();
+        user(label);
+        if (step.save) answers[step.save] = label;
+        history.push(currentStep);
+
+        if (currentStep === 'start' && !introCompleted) {
+          nextAfterIntro = step.next || value;
+          currentStep = 'name';
+        } else {
+          currentStep = step.next || value;
+        }
+
+        box.remove();
+        render();
       };
 
       box.appendChild(btn);
     });
 
-    chatMessages.appendChild(box);
+    el.messages.appendChild(box);
     scroll();
   }
 
-  function removeOptions() {
-    const old = chatMessages.querySelector('.chat-options');
-    if (old) old.remove();
-  }
+  function renderInput(step) {
+    removeOptions();
+    el.inputArea.style.display = 'flex';
+    el.input.value = '';
+    el.send.disabled = !step.optional;
 
-  function showInput(step) {
-    chatForm.style.display = 'flex';
-    chatInput.value = '';
-    chatSendBtn.disabled = true;
-    chatInput.focus();
-
-    backBtn.style.display = historyStack.length > 0 ? 'block' : 'none';
-
-    chatInput.oninput = () => {
-      chatSendBtn.disabled = chatInput.value.trim() === '';
+    el.input.oninput = () => {
+      el.send.disabled = !step.optional && !el.input.value.trim();
     };
 
-    chatSendBtn.onclick = () => {
-      const val = chatInput.value.trim();
-      if (!val) return;
+    el.send.onclick = () => {
+      const val = el.input.value.trim();
+      if (!step.optional && !val) return;
 
-      userMessage(val);
-      answers[step.saveAs] = val;
+      user(val || 'Пропущено');
+      answers[step.save] = val || 'не указано';
+      history.push(currentStep);
 
-      chatInput.value = '';
-      hideInput();
-
-      historyStack.push(currentStep);
-      currentStep = step.next;
-      renderStep();
-    };
-
-    backBtn.onclick = () => {
-      const prevStep = historyStack.pop();
-      if (prevStep) {
-        delete answers[step.saveAs];
-        currentStep = prevStep;
-        hideInput();
-        renderStep();
+      if (currentStep === 'company') {
+        introCompleted = true;
+        currentStep = nextAfterIntro;
+        nextAfterIntro = null;
+      } else {
+        currentStep = step.next;
       }
+
+      hideInput();
+      render();
     };
   }
 
   function hideInput() {
-    chatForm.style.display = 'none';
-    chatSendBtn.onclick = null;
-    chatInput.oninput = null;
-    backBtn.onclick = null;
-    backBtn.style.display = 'none';
+    el.inputArea.style.display = 'none';
+    el.input.oninput = null;
+    el.send.onclick = null;
   }
 
-  function renderFinalForm() {
-    const wrap = document.createElement('div');
+  function removeOptions() {
+    const opt = el.messages.querySelector('.chat-options');
+    if (opt) opt.remove();
+  }
 
-    const list = document.createElement('ul');
-    list.className = 'summary-list';
+  /* =====================
+     SUBMIT
+  ===================== */
+  function submitOnce() {
+    if (isSubmitting) return;
+    isSubmitting = true;
 
-    Object.entries(answers).forEach(([k, v]) => {
-      const li = document.createElement('li');
-      li.innerHTML = `<span class="summary-label">${k}:</span> ${v}`;
-      list.appendChild(li);
+    fetch(ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        ...answers,
+        url: location.href
+      })
+    })
+    .then(() => {
+      const name = answers['Имя'] ? `, ${answers['Имя']}` : '';
+      bot(`Спасибо${name}. Заявка отправлена, специалист свяжется с вами.`);
+    })
+    .catch(() => {
+      bot('Ошибка отправки. Попробуйте позже.');
+      isSubmitting = false;
     });
-
-    wrap.appendChild(list);
-
-    const form = document.createElement('form');
-    form.className = 'final-form';
-
-    form.innerHTML = `
-      <textarea id="finalComment" rows="3" placeholder="Комментарий (необязательно)"></textarea>
-      <div class="privacy-row">
-        <input type="checkbox" id="privacyCheck">
-        <label for="privacyCheck">
-          Я согласен с <a href="/privacy" target="_blank">политикой конфиденциальности</a>
-        </label>
-      </div>
-      <button type="submit" class="submit-btn" disabled>Отправить заявку</button>
-    `;
-
-    const checkbox = form.querySelector('#privacyCheck');
-    const submitBtn = form.querySelector('.submit-btn');
-    const commentEl = form.querySelector('#finalComment');
-
-    checkbox.onchange = () => {
-      submitBtn.disabled = !checkbox.checked;
-    };
-
-    form.onsubmit = async e => {
-      e.preventDefault();
-      if (!checkbox.checked) return;
-
-      submitBtn.disabled = true;
-      submitBtn.textContent = 'Отправка…';
-
-      const dataToSend = { ...answers, comment: commentEl.value.trim() };
-
-      try {
-        const res = await fetch(ENDPOINT, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(dataToSend)
-        });
-
-        if (!res.ok) throw new Error('Server error');
-
-        await botMessage('Спасибо! Заявка отправлена. Мы свяжемся с вами в ближайшее время.');
-      } catch (err) {
-        alert('Ошибка отправки. Попробуйте позже.');
-        submitBtn.disabled = false;
-        submitBtn.textContent = 'Отправить заявку';
-      }
-    };
-
-    wrap.appendChild(form);
-    chatMessages.appendChild(wrap);
-    scroll();
   }
 
-  function scroll() {
-    chatMessages.scrollTop = chatMessages.scrollHeight;
-  }
+  /* =====================
+     CONTROLS
+  ===================== */
+  el.open.onclick = () => {
+    el.widget.classList.remove('closed');
+    el.open.style.display = 'none';
+    if (!el.messages.children.length) render();
+  };
 
+  el.close.onclick = () => {
+    el.widget.classList.add('closed');
+    el.open.style.display = '';
+  };
+
+  el.back.onclick = () => {
+    const prev = history.pop();
+    if (!prev) return;
+    currentStep = prev;
+    hideInput();
+    removeOptions();
+    render();
+  };
+
+  el.restart.onclick = () => {
+    currentStep = 'start';
+    nextAfterIntro = null;
+    introCompleted = false;
+    history.length = 0;
+    isSubmitting = false;
+    Object.keys(answers).forEach(k => delete answers[k]);
+    el.messages.innerHTML = '';
+    hideInput();
+    render();
+  };
 });

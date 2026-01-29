@@ -1,55 +1,80 @@
 <button class="chat-open-btn" id="chatOpenBtn" aria-label="Открыть чат" type="button">
+  <!-- Иконка чата с точками -->
   <svg viewBox="0 0 24 24" aria-hidden="true">
-  <path d="M4 4h16a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H8l-4 3v-3H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"/>
-  <circle cx="9" cy="10" r="1.3"/>
-  <circle cx="12" cy="10" r="1.3"/>
-  <circle cx="15" cy="10" r="1.3"/>
-</svg>
+    <path d="M4 4h16a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H8l-4 3v-3H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"/>
+    <circle cx="9" cy="10" r="1.3"/>
+    <circle cx="12" cy="10" r="1.3"/>
+    <circle cx="15" cy="10" r="1.3"/>
+  </svg>
 </button>
- 
+
+<!-- ВИДЖЕТ ЧАТА -->
 <div class="chat-widget closed" id="chatWidget" role="dialog" aria-modal="true" aria-label="Чат Hangcha">
- 
+
+  <!-- Закрыть -->
   <button
     class="chat-close-btn"
     id="chatCloseBtn"
     aria-label="Закрыть чат"
     type="button"
   >×</button>
- 
+
+  <!-- HEADER -->
   <div class="chat-header">
-    <div class="chat-logo"><img src="/images/logo.png"></div>
-    <div class="chat-title">Помощь по технике Hangcha</div> 
+    <div class="chat-logo">
+      <img src="/images/logo.png" alt="Hangcha">
+    </div>
+    <div class="chat-title">Помощь по технике Hangcha</div>
   </div>
- 
+
+  <!-- СООБЩЕНИЯ -->
   <div
     class="chat-messages"
     id="chatMessages"
     tabindex="0"
     aria-live="polite"
   ></div>
- 
-  <div
-    class="chat-input-area"
-    id="chatInputArea"
-    style="display:none;"
-  >
-    <input
-      type="text"
-      class="chat-input"
-      id="chatInput"
-      placeholder="Введите значение…"
+
+  <!-- FOOTER -->
+  <div class="chat-footer">
+
+    <!-- НАВИГАЦИЯ -->
+    <div class="chat-nav">
+      <button type="button" class="back-btn" id="chatBackBtn" style="display:none;">
+        Назад
+      </button>
+
+      <button type="button" class="restart-btn" id="chatRestartBtn" style="display:none;">
+        Начать заново
+      </button>
+    </div>
+
+    <!-- ВВОД -->
+    <form
+      class="chat-input-area"
+      id="chatInputArea"
       autocomplete="off"
-    />
-    <button
-      type="button"
-      class="chat-send-btn"
-      id="chatSendBtn"
-      disabled
+      style="display:none;"
     >
-      Отправить
-    </button>
+      <input
+        type="text"
+        class="chat-input"
+        id="chatInput"
+        placeholder="Введите значение…"
+        autocomplete="off"
+      />
+      <button
+        type="submit"
+        class="chat-send-btn"
+        id="chatSendBtn"
+        disabled
+      >
+        Отправить
+      </button>
+    </form>
+
   </div>
 
 </div>
-<link rel="stylesheet" href="/templates/trendshop/hc_bot/hc-chat.css">
-<script src="/templates/trendshop/hc_bot/hc-chat.js"></script>
+<link rel="stylesheet" href="/templates/template/hc_bot/hc-chat.css">
+<script src="/templates/template/hc_bot/hc-chat.js"></script>
