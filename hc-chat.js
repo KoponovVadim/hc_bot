@@ -1,21 +1,12 @@
 document.addEventListener('DOMContentLoaded', () => {
 
-  /* ======================
-     CONFIG
-     ====================== */
   const ENDPOINT = '/templates/trendshop/hc_bot/hc-chat.php';
 
-  /* ======================
-     STATE
-     ====================== */
   let currentStep = 'welcome';
   let isTyping = false;
   let finalRendered = false;
   const answers = {};
 
-  /* ======================
-     ELEMENTS
-     ====================== */
   const chatWidget   = document.getElementById('chatWidget');
   const chatOpenBtn  = document.getElementById('chatOpenBtn');
   const chatCloseBtn = document.getElementById('chatCloseBtn');
@@ -24,9 +15,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const chatInput    = document.getElementById('chatInput');
   const chatSendBtn  = document.getElementById('chatSendBtn');
 
-  /* ======================
-     SCENARIOS
-     ====================== */
   const steps = {
     welcome: {
       text: 'Привет! Я помогу подобрать технику Hangcha. С чего начнём?',
@@ -105,9 +93,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
 
-  /* ======================
-     OPEN / CLOSE
-     ====================== */
   chatOpenBtn.onclick = () => {
     chatWidget.classList.remove('closed');
     chatOpenBtn.style.display = 'none';
@@ -122,9 +107,6 @@ document.addEventListener('DOMContentLoaded', () => {
     chatOpenBtn.style.display = '';
   }
 
-  /* ======================
-     START
-     ====================== */
   function start() {
     chatMessages.innerHTML = '';
     Object.keys(answers).forEach(k => delete answers[k]);
@@ -134,9 +116,6 @@ document.addEventListener('DOMContentLoaded', () => {
     renderStep();
   }
 
-  /* ======================
-     RENDER STEP
-     ====================== */
   async function renderStep() {
     const step = steps[currentStep];
     if (!step || isTyping) return;
@@ -161,9 +140,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  /* ======================
-     BOT / USER MESSAGE
-     ====================== */
   function botMessage(text) {
     isTyping = true;
     return new Promise(resolve => {
@@ -196,9 +172,6 @@ document.addEventListener('DOMContentLoaded', () => {
     scroll();
   }
 
-  /* ======================
-     OPTIONS
-     ====================== */
   function renderOptions(options, step) {
     removeOptions();
     const box = document.createElement('div');
@@ -230,9 +203,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (old) old.remove();
   }
 
-  /* ======================
-     INPUT (БЕЗ FORM)
-     ====================== */
   function showInput(step) {
     chatForm.style.display = 'flex';
     chatInput.value = '';
@@ -264,9 +234,6 @@ document.addEventListener('DOMContentLoaded', () => {
     chatInput.oninput = null;
   }
 
-  /* ======================
-     FINAL FORM
-     ====================== */
   function renderFinalForm() {
     const wrap = document.createElement('div');
 
@@ -310,7 +277,6 @@ document.addEventListener('DOMContentLoaded', () => {
       submitBtn.disabled = true;
       submitBtn.textContent = 'Отправка…';
 
-      // Данные для отправки: только answers + comment
       const dataToSend = { ...answers, comment: commentEl.value.trim() };
       console.log('Отправляемые данные:', dataToSend);
 
@@ -339,9 +305,6 @@ document.addEventListener('DOMContentLoaded', () => {
     scroll();
   }
 
-  /* ======================
-     UTILS
-     ====================== */
   function scroll() {
     chatMessages.scrollTop = chatMessages.scrollHeight;
   }
