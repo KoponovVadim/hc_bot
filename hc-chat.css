@@ -86,20 +86,24 @@
    Header
    ============ */
 .chat-header {
-  background: linear-gradient(180deg, #f9fbfd, var(--panel));
-  border-bottom: 1px solid var(--border);
-  padding: 18px 22px 14px;
+    background: linear-gradient(180deg, #f9fbfd, var(--panel));
+    border-bottom: 1px solid var(--border);
+    padding: 25px 22px 14px;
+    display: grid;
+    grid-template-columns: 110px 1fr;
+    align-items: center;
+    justify-items: center;
+    
+}
+.chat-logo{
+    width: 110px;
 }
 .chat-title {
   font-size: 17px;
   font-weight: 600;
   color: var(--blue);
   margin-bottom: 4px;
-}
-.chat-subtitle {
-  font-size: 13px;
-  color: var(--text-secondary);
-}
+} 
 
 /* ============
    Кнопка закрытия
@@ -249,6 +253,24 @@
   cursor: not-allowed;
 }
 
+.back-btn {
+  background: #6b7280;
+  color: #fff;
+  border: none;
+  border-radius: var(--radius);
+  padding: 10px 14px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background .15s, transform .05s;
+}
+.back-btn:hover {
+  background: #4b5563;
+}
+.back-btn:active {
+  transform: scale(0.97);
+}
+
 /* ============
    Финальный экран
    ============ */
@@ -387,4 +409,23 @@
   background: var(--text-secondary);
   cursor: not-allowed;
   transform: none;
+}
+
+.restart-btn {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--panel);
+  border-top: 1px solid var(--border);
+  padding: 10px 14px;
+  text-align: center;
+  font-size: 14px;
+  color: var(--text-secondary);
+  border: none;
+  cursor: pointer;
+  transition: background .15s;
+}
+.restart-btn:hover {
+  background: #f1f5f9;
 }

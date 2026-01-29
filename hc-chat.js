@@ -6,6 +6,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let isTyping = false;
   let finalRendered = false;
   const answers = {};
+  const historyStack = [];
 
   const chatWidget   = document.getElementById('chatWidget');
   const chatOpenBtn  = document.getElementById('chatOpenBtn');
@@ -14,6 +15,19 @@ document.addEventListener('DOMContentLoaded', () => {
   const chatForm     = document.getElementById('chatInputArea');
   const chatInput    = document.getElementById('chatInput');
   const chatSendBtn  = document.getElementById('chatSendBtn');
+
+  const backBtn = document.createElement('button');
+  backBtn.type = 'button';
+  backBtn.className = 'back-btn';
+  backBtn.textContent = 'Назад';
+  backBtn.style.display = 'none';
+  chatForm.insertBefore(backBtn, chatInput);
+
+  const restartBtn = document.createElement('button');
+  restartBtn.type = 'button';
+  restartBtn.className = 'restart-btn';
+  restartBtn.textContent = 'Начать заново';
+  chatWidget.appendChild(restartBtn);
 
   const steps = {
     welcome: {
@@ -102,6 +116,8 @@ document.addEventListener('DOMContentLoaded', () => {
   chatCloseBtn.onclick = closeChat;
   document.addEventListener('keydown', e => e.key === 'Escape' && closeChat());
 
+  restartBtn.onclick = start;
+
   function closeChat() {
     chatWidget.classList.add('closed');
     chatOpenBtn.style.display = '';
@@ -110,6 +126,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function start() {
     chatMessages.innerHTML = '';
     Object.keys(answers).forEach(k => delete answers[k]);
+    historyStack.length = 0;
     currentStep = 'welcome';
     finalRendered = false;
     hideInput();
@@ -187,6 +204,7 @@ document.addEventListener('DOMContentLoaded', () => {
         userMessage(label);
         if (step.saveAs) answers[step.saveAs] = label;
         removeOptions();
+        historyStack.push(currentStep);
         currentStep = step.next || value;
         renderStep();
       };
@@ -209,6 +227,8 @@ document.addEventListener('DOMContentLoaded', () => {
     chatSendBtn.disabled = true;
     chatInput.focus();
 
+    backBtn.style.display = historyStack.length > 0 ? 'block' : 'none';
+
     chatInput.oninput = () => {
       chatSendBtn.disabled = chatInput.value.trim() === '';
     };
@@ -223,8 +243,19 @@ document.addEventListener('DOMContentLoaded', () => {
       chatInput.value = '';
       hideInput();
 
+      historyStack.push(currentStep);
       currentStep = step.next;
       renderStep();
+    };
+
+    backBtn.onclick = () => {
+      const prevStep = historyStack.pop();
+      if (prevStep) {
+        delete answers[step.saveAs];
+        currentStep = prevStep;
+        hideInput();
+        renderStep();
+      }
     };
   }
 
@@ -232,6 +263,8 @@ document.addEventListener('DOMContentLoaded', () => {
     chatForm.style.display = 'none';
     chatSendBtn.onclick = null;
     chatInput.oninput = null;
+    backBtn.onclick = null;
+    backBtn.style.display = 'none';
   }
 
   function renderFinalForm() {
@@ -278,7 +311,6 @@ document.addEventListener('DOMContentLoaded', () => {
       submitBtn.textContent = 'Отправка…';
 
       const dataToSend = { ...answers, comment: commentEl.value.trim() };
-      console.log('Отправляемые данные:', dataToSend);
 
       try {
         const res = await fetch(ENDPOINT, {
@@ -287,13 +319,10 @@ document.addEventListener('DOMContentLoaded', () => {
           body: JSON.stringify(dataToSend)
         });
 
-        console.log('Ответ сервера:', res.status, res.statusText);
-
         if (!res.ok) throw new Error('Server error');
 
         await botMessage('Спасибо! Заявка отправлена. Мы свяжемся с вами в ближайшее время.');
       } catch (err) {
-        console.error('Ошибка отправки:', err);
         alert('Ошибка отправки. Попробуйте позже.');
         submitBtn.disabled = false;
         submitBtn.textContent = 'Отправить заявку';
