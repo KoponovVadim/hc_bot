@@ -31,12 +31,12 @@
 
 ## Установка и интеграция
 
-1. Скопируйте файлы в папку сайта, например `/templates/your_template/hc-chat/`.
+1. Скопируйте файлы в папку сайта, например `/templates/your_template/hc_bot/`.
 
 2. Подключите в шаблоне Joomla:
 ```html
-<link rel="stylesheet" href="/templates/your_template/hc-chat/hc-chat.css">
-<script src="/templates/your_template/hc-chat/hc-chat.js"></script>
+<link rel="stylesheet" href="/templates/your_template/hc_bot/hc-chat.css">
+<script src="/templates/your_template/hc_bot/hc-chat.js"></script>
 ```
 
 3. Вставьте HTML-разметку из `hc-chat.html` в шаблон (перед `</body>`).
